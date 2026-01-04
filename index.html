@@ -107,6 +107,13 @@
             background-color: rgba(241, 245, 249, 0.5);
             border-radius: 2px;
         }
+
+        /* Notepad Specific */
+        .notepad-bg {
+            background-image: linear-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 100% 24px;
+            line-height: 24px;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden font-sans">
@@ -142,7 +149,7 @@
 
         <div class="flex items-center space-x-3">
              <button onclick="app.generatePrompt()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded shadow transition font-medium flex items-center">
-                <i class="fa-solid fa-code mr-2"></i>生成 Prompt
+                <i class="fa-solid fa-code mr-2"></i>生成 AI Studio 提示词
             </button>
             <button onclick="app.openSettings()" class="text-slate-400 hover:text-blue-600 transition text-lg px-2"><i class="fa-solid fa-gear"></i></button>
         </div>
@@ -183,6 +190,24 @@
 
             <div class="flex-1 overflow-y-auto p-4 space-y-4">
                 
+                <!-- NEW: Notepad Section -->
+                <div class="interaction-card p-4 border-l-4 border-l-yellow-400 relative group">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="font-bold text-slate-800 text-sm flex items-center">
+                            <i class="fa-regular fa-note-sticky text-yellow-500 mr-2 text-lg"></i>
+                            项目记事本 (全局配置)
+                        </label>
+                        <span class="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">最终生成必读</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mb-2">
+                        API Key、数据库选型、配色等硬性要求请记录于此。AI 也会自动追加重要信息。
+                    </p>
+                    <textarea id="notepad-content" rows="4" class="w-full text-xs p-3 border border-slate-200 bg-yellow-50/30 rounded-md focus:bg-white focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 outline-none resize-none transition font-mono notepad-bg text-slate-700" placeholder="例如：
+- API Key: sk-xxxx
+- 必须使用 PostgreSQL
+- 主题色: #FF5733" oninput="app.saveNotepad(this.value)"></textarea>
+                </div>
+
                 <!-- Window 1: Modification Request -->
                 <div class="interaction-card p-4 relative group">
                     <div class="absolute top-0 left-0 w-1 h-full bg-blue-500 rounded-l-lg"></div>
@@ -245,9 +270,9 @@
                 <button id="btn-submit-ai" onclick="app.submitToAI()" class="group w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all flex justify-center items-center relative overflow-hidden">
                     <div class="absolute inset-0 w-full h-full bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                     <i class="fa-solid fa-paper-plane mr-2"></i> 
-                    <span>一键提交 (合并指令、选项与建议)</span>
+                    <span>一键提交 (记事本 + 指令 + 选项 + 建议)</span>
                 </button>
-                <p class="text-[10px] text-center text-slate-400 mt-2">AI 会根据您的选择智能调整导图</p>
+                <p class="text-[10px] text-center text-slate-400 mt-2">AI 会自动更新记事本中的重要信息</p>
             </div>
         </div>
     </div>
@@ -257,7 +282,7 @@
         <div class="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center max-w-sm w-full mx-4">
             <div class="spinner mb-6"></div>
             <h3 class="text-xl font-bold text-slate-800 animate-pulse">AI 正在思考...</h3>
-            <p class="text-sm text-slate-500 mt-2 text-center">正在分析您的决策并重构思维导图</p>
+            <p class="text-sm text-slate-500 mt-2 text-center">正在分析决策、更新导图并整理记事本</p>
             <div class="mt-4 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                 <div class="bg-blue-500 h-full rounded-full animate-[width_2s_ease-in-out_infinite]" style="width: 50%"></div>
             </div>
@@ -303,7 +328,7 @@
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
                 <div>
                     <h3 class="font-bold text-lg text-slate-800 flex items-center"><i class="fa-brands fa-google text-blue-500 mr-2"></i>Google AI Studio 提示词</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">已生成包含完整交互细节的详细需求文档</p>
+                    <p class="text-xs text-slate-500 mt-0.5">已生成包含软件描述、实现路径及完整细节的规格说明书</p>
                 </div>
                 <button onclick="document.getElementById('prompt-modal').classList.add('hidden')" class="text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times text-xl"></i></button>
             </div>
@@ -329,29 +354,45 @@
             id: 'root',
             topic: '我的产品构想',
             description: '项目核心目标（例如：打造一个极简的待办事项应用）',
+            details: '这里是关于核心目标的详细技术解释和业务逻辑说明。点击“详情”按钮可展开查看完整内容。',
             expanded: true,
+            expandedDetails: false,
             children: [
                 { 
                     id: 'c1', 
                     topic: '核心功能', 
                     description: '用户主要使用的功能', 
+                    details: '详细描述核心功能的技术实现，包括前端交互逻辑和后端API设计。',
                     expanded: true, 
+                    expandedDetails: false,
                     children: [
-                        { id: 'c1-1', topic: '用户登录', description: '手机号/微信登录', children: [], expanded: true }
+                        { 
+                            id: 'c1-1', 
+                            topic: '用户登录', 
+                            description: '手机号/微信登录', 
+                            details: '1. 支持手机号+验证码登录。\n2. 支持微信OAuth2.0授权登录。\n3. JWT Token 鉴权机制，有效期7天。',
+                            children: [], 
+                            expanded: true,
+                            expandedDetails: false
+                        }
                     ] 
                 },
                 { 
                     id: 'c2', 
                     topic: '用户中心', 
                     description: '个人信息管理', 
+                    details: '包含头像上传（OSS直传）、昵称修改、账号注销流程。',
                     expanded: true, 
+                    expandedDetails: false,
                     children: [] 
                 },
                 { 
                     id: 'c3', 
                     topic: '数据管理', 
                     description: '后台管理系统', 
+                    details: '基于RBAC的权限管理系统，包含用户管理、数据统计仪表盘。',
                     expanded: true, 
+                    expandedDetails: false,
                     children: [] 
                 }
             ]
@@ -372,11 +413,13 @@
                 this.lastMouseY = 0;
                 
                 // AI Context State
-                // clarificationQuestions structure: [{ question: "...", options: ["A", "B"] }]
                 this.aiContext = {
                     lastQuestions: [],   
                     lastSuggestions: []  
                 };
+                
+                // Notepad Content (Persistent)
+                this.notepadContent = "";
 
                 // Settings
                 this.settings = {
@@ -400,7 +443,6 @@
                 
                 // Canvas Panning
                 window.addEventListener('mousemove', (e) => {
-                    // Prevent panning if we are selecting text inside a node
                     if (this.isDragging) {
                         const dx = e.clientX - this.lastMouseX;
                         const dy = e.clientY - this.lastMouseY;
@@ -419,9 +461,7 @@
                 // Mouse Wheel Zoom
                 this.canvasContainer.addEventListener('wheel', (e) => {
                     e.preventDefault();
-                    // Zoom direction
                     const delta = e.deltaY > 0 ? -0.1 : 0.1;
-                    // Limit zoom range
                     const newScale = Math.min(Math.max(0.2, this.scale + delta), 3);
                     
                     if (newScale !== this.scale) {
@@ -443,7 +483,7 @@
                             e.preventDefault();
                             e.target.blur(); // Finish edit
                         }
-                        return; // Don't trigger other shortcuts while editing text
+                        return;
                     }
 
                     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); this.undo(); }
@@ -457,26 +497,38 @@
                 });
             }
 
-            // --- History Management (Limit 15) ---
+            // --- History Management ---
             pushHistory() {
                 if (this.history.length >= 15) this.history.shift();
-                this.history.push(JSON.parse(JSON.stringify(this.treeData)));
-                this.future = []; // Clear redo stack
+                this.history.push({
+                    tree: JSON.parse(JSON.stringify(this.treeData)),
+                    notepad: this.notepadContent
+                });
+                this.future = [];
                 this.saveToStorage();
             }
 
             undo() {
                 if (this.history.length === 0) return;
-                this.future.push(JSON.parse(JSON.stringify(this.treeData)));
-                this.treeData = this.history.pop();
+                this.future.push({
+                    tree: JSON.parse(JSON.stringify(this.treeData)),
+                    notepad: this.notepadContent
+                });
+                const prev = this.history.pop();
+                this.treeData = prev.tree;
+                this.notepadContent = prev.notepad;
+                this.updateNotepadUI();
                 this.render();
                 this.saveToStorage();
             }
 
             redo() {
                 if (this.future.length === 0) return;
-                this.pushHistory(); // Push current to history before restoring future
-                this.treeData = this.future.pop();
+                this.pushHistory(); // Current to history
+                const next = this.future.pop();
+                this.treeData = next.tree;
+                this.notepadContent = next.notepad;
+                this.updateNotepadUI();
                 this.render();
                 this.saveToStorage();
             }
@@ -485,18 +537,20 @@
             saveToStorage() {
                 localStorage.setItem('mindmap_data', JSON.stringify(this.treeData));
                 localStorage.setItem('mindmap_ai_ctx', JSON.stringify(this.aiContext));
+                localStorage.setItem('mindmap_notepad', this.notepadContent);
             }
 
             loadFromStorage() {
                 const saved = localStorage.getItem('mindmap_data');
                 const ctx = localStorage.getItem('mindmap_ai_ctx');
+                const note = localStorage.getItem('mindmap_notepad');
+                
                 if (saved) this.treeData = JSON.parse(saved);
                 if (ctx) {
                     try {
                         const parsedCtx = JSON.parse(ctx);
-                        // Migration: Check if lastQuestions is array of strings (old format)
                         if (parsedCtx.lastQuestions && parsedCtx.lastQuestions.length > 0 && typeof parsedCtx.lastQuestions[0] === 'string') {
-                             parsedCtx.lastQuestions = []; // Reset if old format to avoid crash
+                             parsedCtx.lastQuestions = []; 
                         }
                         this.aiContext = parsedCtx;
                     } catch(e) {
@@ -506,10 +560,24 @@
                     this.aiContext = { lastQuestions: [], lastSuggestions: [] };
                 }
                 
+                if (note) this.notepadContent = note;
+                this.updateNotepadUI();
+                
                 const rect = this.canvasContainer.getBoundingClientRect();
                 this.translateX = rect.width / 2 - 100;
                 this.translateY = rect.height / 2 - 50;
                 this.updateTransform();
+            }
+            
+            saveNotepad(val) {
+                // Don't push history on every keystroke, just save state
+                this.notepadContent = val;
+                localStorage.setItem('mindmap_notepad', this.notepadContent);
+            }
+            
+            updateNotepadUI() {
+                const el = document.getElementById('notepad-content');
+                if(el) el.value = this.notepadContent;
             }
 
             newProject() {
@@ -517,8 +585,9 @@
                     this.pushHistory();
                     this.treeData = JSON.parse(JSON.stringify(defaultTree));
                     this.aiContext = { lastQuestions: [], lastSuggestions: [] };
+                    this.notepadContent = "";
+                    this.updateNotepadUI();
                     
-                    // Clear inputs
                     document.getElementById('ai-input-request').value = '';
                     this.updateAIPanelUI();
                     this.render();
@@ -527,7 +596,11 @@
             }
 
             saveProject() {
-                const blob = new Blob([JSON.stringify(this.treeData, null, 2)], {type: 'application/json'});
+                const data = {
+                    tree: this.treeData,
+                    notepad: this.notepadContent
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
                 a.download = `mindmap_project_${Date.now()}.json`;
@@ -541,9 +614,20 @@
                 reader.onload = (e) => {
                     try {
                         this.pushHistory();
-                        this.treeData = JSON.parse(e.target.result);
+                        const json = JSON.parse(e.target.result);
+                        
+                        // Handle legacy or new format
+                        if (json.tree) {
+                            this.treeData = json.tree;
+                            this.notepadContent = json.notepad || "";
+                        } else {
+                            this.treeData = json; // Legacy format
+                            this.notepadContent = "";
+                        }
+                        
                         this.aiContext = { lastQuestions: [], lastSuggestions: [] };
                         this.updateAIPanelUI();
+                        this.updateNotepadUI();
                         this.render();
                         this.saveToStorage();
                     } catch (err) {
@@ -551,56 +635,93 @@
                     }
                 };
                 reader.readAsText(file);
-                input.value = ''; // Reset
+                input.value = '';
             }
 
-            // --- Rendering Core ---
+            // --- Rendering Core (Updated for variable height) ---
             render() {
                 this.nodeLayer.innerHTML = '';
                 this.svgLayer.innerHTML = '';
                 
-                const nodeWidth = 200;
-                const nodeHeight = 60;
-                const gapX = 120;
-                const gapY = 25;
+                const nodeWidth = 240; // Wider to accommodate details
+                const baseNodeHeight = 70;
+                const gapX = 140;
+                const gapY = 30;
 
-                const measure = (node) => {
-                    if (!node.children || node.children.length === 0 || !node.expanded) {
-                        node._h = nodeHeight;
-                        return nodeHeight;
+                // 1. Estimate Content Height
+                const calculateContentHeight = (node) => {
+                    let h = baseNodeHeight;
+                    if (node.expandedDetails && node.details) {
+                        // Rough estimation: 20px per ~20 chars line + padding
+                        const lines = Math.ceil(node.details.length / 24); 
+                        h += (lines * 18) + 20; // content height + padding
                     }
-                    let totalH = 0;
-                    node.children.forEach(child => {
-                        totalH += measure(child) + gapY;
-                    });
-                    totalH -= gapY; 
-                    node._h = totalH;
-                    return totalH;
+                    node._contentH = h;
+                    return h;
                 };
+
+                // 2. Measure Tree (Recursive)
+                const measure = (node) => {
+                    const contentH = calculateContentHeight(node);
+                    
+                    if (!node.children || node.children.length === 0 || !node.expanded) {
+                        node._h = contentH;
+                        return contentH;
+                    }
+                    
+                    let childrenTotalH = 0;
+                    node.children.forEach(child => {
+                        childrenTotalH += measure(child) + gapY;
+                    });
+                    childrenTotalH -= gapY;
+                    
+                    node._h = Math.max(contentH, childrenTotalH);
+                    return node._h;
+                };
+                
                 measure(this.treeData);
 
+                // 3. Layout (Recursive)
                 const layout = (node, x, y) => {
                     node._x = x;
                     node._y = y; 
                     
+                    // Render Node
                     const el = document.createElement('div');
                     const isSelected = this.selectedNodeId === node.id;
-                    el.className = `node absolute flex flex-col justify-center items-center bg-white border rounded-lg shadow-sm cursor-pointer select-none transition-all ${isSelected ? 'selected' : 'border-slate-300 hover:border-slate-400'}`;
+                    el.className = `node absolute flex flex-col bg-white border rounded-lg shadow-sm cursor-pointer select-none transition-all ${isSelected ? 'selected' : 'border-slate-300 hover:border-slate-400'}`;
                     el.style.width = `${nodeWidth}px`;
-                    el.style.minHeight = `${nodeHeight}px`;
                     el.style.left = `${x}px`;
-                    el.style.top = `${y - nodeHeight/2}px`; 
+                    el.style.top = `${y - node._contentH/2}px`; 
+                    el.style.height = `${node._contentH}px`;
                     el.style.zIndex = 10;
                     
+                    // Content
                     el.innerHTML = `
-                        <div class="px-4 py-2 text-center w-full">
+                        <div class="px-4 py-3 w-full h-full flex flex-col relative">
                             <div class="font-bold text-slate-800 text-sm outline-none leading-tight mb-1" ${isSelected ? 'contenteditable="true"' : ''}>${node.topic}</div>
-                            ${node.description ? `<div class="text-[11px] text-slate-500 truncate border-t border-slate-100 pt-1 mt-1">${node.description}</div>` : ''}
+                            ${node.description ? `<div class="text-[11px] text-slate-500 border-t border-slate-100 pt-1 mt-1 mb-1">${node.description}</div>` : ''}
+                            
+                            ${node.details ? `
+                            <div class="mt-auto pt-2 flex items-center justify-between border-t border-slate-100">
+                                <button class="text-[10px] text-blue-500 hover:text-blue-700 font-medium flex items-center bg-blue-50 px-2 py-0.5 rounded transition" onclick="app.toggleNodeDetails('${node.id}', event)">
+                                    <i class="fa-solid ${node.expandedDetails ? 'fa-angle-up' : 'fa-angle-down'} mr-1"></i>
+                                    ${node.expandedDetails ? '收起详情' : '展开详情'}
+                                </button>
+                            </div>
+                            ` : ''}
+                            
+                            ${node.expandedDetails ? `
+                            <div class="mt-2 text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 overflow-y-auto flex-1 font-mono leading-relaxed whitespace-pre-wrap">
+                                ${node.details || '暂无详细说明'}
+                            </div>
+                            ` : ''}
+
+                            ${(node.children && node.children.length > 0) ? 
+                                `<div class="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white border border-slate-300 rounded-full flex items-center justify-center hover:bg-slate-100 text-xs text-slate-500 z-20 shadow-sm" onclick="app.toggleNode('${node.id}', event)">
+                                    <i class="fa-solid ${node.expanded ? 'fa-minus' : 'fa-plus'}"></i>
+                                </div>` : ''}
                         </div>
-                        ${(node.children && node.children.length > 0) ? 
-                            `<div class="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white border border-slate-300 rounded-full flex items-center justify-center hover:bg-slate-100 text-xs text-slate-500 z-20 shadow-sm" onclick="app.toggleNode('${node.id}', event)">
-                                <i class="fa-solid ${node.expanded ? 'fa-minus' : 'fa-plus'}"></i>
-                            </div>` : ''}
                     `;
                     
                     const topicDiv = el.querySelector('div[contenteditable]');
@@ -616,7 +737,7 @@
                     }
 
                     el.onclick = (e) => {
-                        if (e.target.closest('.rounded-full')) return;
+                        if (e.target.closest('button') || e.target.closest('.rounded-full')) return;
                         this.selectNode(node.id);
                         e.stopPropagation();
                     };
@@ -625,13 +746,17 @@
                     this.nodeLayer.appendChild(el);
 
                     if (node.children && node.children.length > 0 && node.expanded) {
-                        let currentY = y - node._h / 2;
+                        let currentY = y - (node._h - (node._contentH - baseNodeHeight)) / 2; 
+                        let childrenBlockH = 0;
+                        node.children.forEach(c => childrenBlockH += c._h + gapY);
+                        childrenBlockH -= gapY;
+                        
+                        let childStartY = y - childrenBlockH / 2 + (node.children[0]._h / 2);
+
                         node.children.forEach(child => {
-                            const childH = child._h;
-                            const childY = currentY + childH / 2;
-                            layout(child, x + nodeWidth + gapX, childY);
-                            this.drawConnector(x + nodeWidth, y, x + nodeWidth + gapX, childY);
-                            currentY += childH + gapY;
+                            layout(child, x + nodeWidth + gapX, childStartY);
+                            this.drawConnector(x + nodeWidth, y, x + nodeWidth + gapX, childStartY);
+                            childStartY += child._h + gapY; 
                         });
                     }
                 };
@@ -705,6 +830,15 @@
                     this.render();
                 }
             }
+            
+            toggleNodeDetails(id, e) {
+                e.stopPropagation();
+                const node = this.findNode(id);
+                if (node) {
+                    node.expandedDetails = !node.expandedDetails;
+                    this.render();
+                }
+            }
 
             addChildNode() {
                 if (!this.selectedNodeId) return;
@@ -714,7 +848,7 @@
                     parent.expanded = true;
                     if(!parent.children) parent.children = [];
                     const newId = uuid();
-                    parent.children.push({ id: newId, topic: '新功能', description: '', children: [], expanded: true });
+                    parent.children.push({ id: newId, topic: '新功能', description: '', details: '待补充详细说明...', children: [], expanded: true, expandedDetails: false });
                     this.render();
                     this.selectNode(newId);
                 }
@@ -726,7 +860,7 @@
                 if (parent) {
                     this.pushHistory();
                     const newId = uuid();
-                    parent.children.push({ id: newId, topic: '新功能', description: '', children: [], expanded: true });
+                    parent.children.push({ id: newId, topic: '新功能', description: '', details: '待补充详细说明...', children: [], expanded: true, expandedDetails: false });
                     this.render();
                     this.selectNode(newId);
                 }
@@ -750,28 +884,24 @@
                 const suggestionList = document.getElementById('ai-suggestion-list');
                 const qBadge = document.getElementById('badge-question-status');
 
-                // 2. Render Questions Window (Complex Object with Options)
+                // 2. Render Questions Window
                 questionList.innerHTML = '';
                 if (this.aiContext.lastQuestions && this.aiContext.lastQuestions.length > 0) {
                     this.aiContext.lastQuestions.forEach((qObj, index) => {
-                        // qObj = { question: "xxx", options: ["A","B"] }
                         const qId = `q-${index}`;
                         const card = document.createElement('div');
                         card.className = "bg-slate-50 border border-slate-200 rounded p-3 mb-2 shadow-sm text-sm";
                         
-                        // Question Text
                         const title = document.createElement('div');
                         title.className = "font-medium text-slate-800 mb-2";
                         title.innerText = `${index + 1}. ${qObj.question}`;
                         card.appendChild(title);
 
-                        // Options Container
                         if (qObj.options && qObj.options.length > 0) {
                             const optContainer = document.createElement('div');
                             optContainer.className = "flex flex-wrap gap-2 mb-2";
                             
                             qObj.options.forEach((opt, optIndex) => {
-                                const optId = `${qId}-opt-${optIndex}`;
                                 const wrapper = document.createElement('label');
                                 wrapper.className = "cursor-pointer";
                                 wrapper.innerHTML = `
@@ -785,12 +915,10 @@
                             card.appendChild(optContainer);
                         }
 
-                        // Custom Input
                         const customInput = document.createElement('input');
                         customInput.type = "text";
                         customInput.className = "w-full p-2 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-blue-500 outline-none";
                         customInput.placeholder = "补充说明 / 自定义需求...";
-                        customInput.dataset.qid = index; // Mark for collection
                         customInput.id = `${qId}-custom`;
                         card.appendChild(customInput);
 
@@ -805,7 +933,7 @@
                     qBadge.className = "text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded";
                 }
 
-                // 3. Render Suggestions Window (Checkboxes)
+                // 3. Render Suggestions Window
                 suggestionList.innerHTML = '';
                 if (this.aiContext.lastSuggestions && this.aiContext.lastSuggestions.length > 0) {
                     this.aiContext.lastSuggestions.forEach((s, index) => {
@@ -830,8 +958,6 @@
             toggleAllSuggestions() {
                 const checkboxes = document.querySelectorAll('input[name="ai-suggestion"]');
                 if (checkboxes.length === 0) return;
-                
-                // If any is unchecked, select all. If all checked, deselect all.
                 const allChecked = Array.from(checkboxes).every(cb => cb.checked);
                 checkboxes.forEach(cb => cb.checked = !allChecked);
             }
@@ -840,17 +966,13 @@
                 if (document.activeElement) document.activeElement.blur();
                 await new Promise(resolve => setTimeout(resolve, 50));
 
-                // 1. Gather Modification Request
                 const reqText = document.getElementById('ai-input-request').value.trim();
-                
-                // 2. Gather Question Responses (Selection + Custom Text)
                 const questionResponses = [];
                 if (this.aiContext.lastQuestions) {
                     this.aiContext.lastQuestions.forEach((qObj, index) => {
                         const qId = `q-${index}`;
                         const selectedOption = document.querySelector(`input[name="${qId}"]:checked`)?.value;
                         const customText = document.getElementById(`${qId}-custom`)?.value.trim();
-                        
                         if (selectedOption || customText) {
                             questionResponses.push({
                                 question: qObj.question,
@@ -860,15 +982,9 @@
                         }
                     });
                 }
-                
-                // 3. Gather checked suggestions
-                const checkedSuggestions = Array.from(document.querySelectorAll('input[name="ai-suggestion"]:checked'))
-                    .map(cb => cb.value);
+                const checkedSuggestions = Array.from(document.querySelectorAll('input[name="ai-suggestion"]:checked')).map(cb => cb.value);
 
-                // Validation
-                const hasInput = reqText || questionResponses.length > 0 || checkedSuggestions.length > 0;
-                
-                if (!hasInput) {
+                if (!reqText && questionResponses.length === 0 && checkedSuggestions.length === 0) {
                     alert("请至少进行一项操作：\n1. 输入修改指令\n2. 回答AI的问题\n3. 勾选AI的建议");
                     return;
                 }
@@ -876,44 +992,45 @@
                 document.getElementById('loading-overlay').classList.remove('hidden');
 
                 const systemPrompt = `
-你是一位**资深的产品经理助理和技术合伙人**。你的目标是帮助用户完善产品思维导图。
+你是一位**资深的产品经理助理和技术合伙人**。
+**核心任务**：帮助用户完善产品思维导图，确保每个节点都有**详细的技术实现逻辑**和**业务规则**。
 
-**原则：**
-1. **结构化**：以 JSON 返回结果。
-2. **通俗化**：用产品经理能听懂的语言。
+**功能模块 - 项目记事本 (Notepad)**:
+你拥有一个长期的记忆区，即 'currentNotepad'。
+逻辑：
+1. **分析输入**：检查用户的指令、回答或采纳的建议中是否包含 **API Key**、**技术选型约束**（如必须用PostgreSQL）、**全局配色**、**核心业务规则** 等关键信息。
+2. **更新记事本**：如果有上述信息，请将其整理并追加到记事本中。
+3. **原则**：**只增不减**。除非新信息明确冲突（例如用户说“改用MySQL”），否则不要删除旧的记录。保持记事本内容简洁、条理化（建议使用列表格式）。
+4. **输出**：在返回的 JSON 中包含 \`updatedNotepad\` 字段。如果内容无变化，返回原内容。
+
+**常规任务**：
+1. **Details 字段**：在更新 JSON 时，必须为每个节点填充 \`details\` 字段（详细技术实现）。
+2. **结构化**：返回 JSON。
 3. **全面性**：生成 **10条** 建议，**5-15个** 具体的询问点。
 
 **输入数据：**
-1. **修改指令** (Modification Request): 用户的新需求。
-2. **问题反馈** (Question Responses): 用户对你上次提出的具体问题的回答（包含选项和自定义文本）。
-3. **采纳建议** (Accepted Suggestions): 用户勾选了你上次提的建议，请务必**立即**将这些建议落实到 JSON 导图中。
-
-**任务：**
-1. **更新导图**：根据上述所有输入，智能更新 JSON 树。注意：用户采纳的建议、回答的问题必须体现在导图中。
-2. **生成询问列表 (clarificationQuestions)**：针对当前设计，生成 **5-15个** 具体问题，每个问题必须包含**选项**。
-   - 目的：让用户做选择题，快速确认细节。
-   - 格式：对象数组 \`{ "question": "xxx", "options": ["A", "B", "C"] }\`。
-   - 例子：Question: "登录方式？", Options: ["仅手机号", "手机+微信", "邮箱+密码"]
-3. **生成建议列表 (suggestions)**：生成 **10个** 具体的优化建议（功能、体验、运营、安全等维度）。
+1. **记事本内容** (Current Notepad): 当前已记录的重要信息。
+2. **修改指令** (Modification Request): 用户的新需求。
+3. **问题反馈** (Question Responses): 用户对你上次提出的具体问题的回答。
+4. **采纳建议** (Accepted Suggestions): 用户勾选了你上次提的建议。
 
 **输出格式 (Strict JSON):**
 {
-    "updatedTree": { ...JSON对象... },
+    "updatedTree": { ...JSON对象, 确保每个节点都有 'details' 字段... },
+    "updatedNotepad": "更新后的记事本内容字符串...",
     "clarificationQuestions": [
-        { "question": "问题描述...", "options": ["选项1", "选项2", "选项3"] },
-        ...
+        { "question": "...", "options": ["...", "..."] }, ...
     ],
-    "suggestions": ["建议1", "建议2", ... (共10条)]
+    "suggestions": ["...", ...]
 }
-
-注意：仅返回 JSON，不要包含 Markdown 格式。
 `;
 
                 const userPrompt = JSON.stringify({
                     currentTree: this.treeData,
+                    currentNotepad: this.notepadContent, // Send current notes
                     inputs: {
                         modificationRequest: reqText || "无新指令",
-                        questionResponses: questionResponses, // Array of { question, selectedOption, customDetail }
+                        questionResponses: questionResponses,
                         acceptedSuggestions: checkedSuggestions
                     }
                 });
@@ -952,17 +1069,21 @@
 
                     const result = JSON.parse(content);
 
-                    // Update State
                     this.pushHistory(); 
+                    
+                    // Update Tree
                     this.treeData = result.updatedTree;
+                    
+                    // Update Notepad (Important!)
+                    if (result.updatedNotepad !== undefined) {
+                        this.notepadContent = result.updatedNotepad;
+                        this.updateNotepadUI();
+                    }
+
                     this.aiContext.lastQuestions = result.clarificationQuestions || [];
                     this.aiContext.lastSuggestions = result.suggestions || [];
 
-                    // Clear Inputs
                     document.getElementById('ai-input-request').value = '';
-                    // Checkboxes/Inputs will be cleared by re-rendering
-
-                    // UI Update
                     this.render();
                     this.updateAIPanelUI();
                     this.saveToStorage();
@@ -982,20 +1103,24 @@
                     return;
                 }
 
-                // 1. Extract Project Info
                 const projectName = this.treeData.topic || "Untitled Project";
                 const projectGoal = this.treeData.description || "No specific goal provided.";
+                
+                // Get Notepad Content
+                const projectNotes = this.notepadContent || "No specific constraints recorded.";
 
-                // 2. Flatten tree to detailed list
                 let treeText = "";
                 const traverse = (node, depth) => {
                     const indent = "  ".repeat(depth);
                     
-                    // Format: - **Node Title**
-                    //           - *Spec*: Node Description
                     treeText += `${indent}- **${node.topic}**\n`;
                     if (node.description) {
-                        treeText += `${indent}  - *Spec*: ${node.description}\n`;
+                        treeText += `${indent}  - *Summary*: ${node.description}\n`;
+                    }
+                    if (node.details) {
+                        // Formatting details to look good in markdown
+                        const detailsFormatted = node.details.replace(/\n/g, `\n${indent}    `);
+                        treeText += `${indent}  - *Technical Spec*: \n${indent}    ${detailsFormatted}\n`;
                     }
                     
                     if (node.children) {
@@ -1003,12 +1128,11 @@
                     }
                 };
                 
-                // Start traversing from children to skip root node in the list
                 if (this.treeData.children) {
                     this.treeData.children.forEach(c => traverse(c, 0));
                 }
 
-                // 3. Generate High-Fidelity Prompt
+                // Enhanced Prompt for Google AI Studio Build
                 const finalPrompt = `
 # Role
 You are an expert Senior Full Stack Developer and System Architect.
@@ -1017,41 +1141,47 @@ You are an expert Senior Full Stack Developer and System Architect.
 **Project Name**: ${projectName}
 **Core Objective**: ${projectGoal}
 
-# Context & Instructions
-I am a Product Manager who has engaged in a deep, iterative design process to define the requirements for this software.
-The structure provided below is NOT a rough sketch; it is a **finalized, detailed functional specification**.
+# Critical Constraints & Knowledge Base (Project Notepad)
+**IMPORTANT**: The following information represents mandatory constraints, API keys, and architectural decisions that MUST be adhered to.
+---------------------------------------------------
+${projectNotes}
+---------------------------------------------------
 
-**CRITICAL INSTRUCTION**: 
-You must treat every node in the provided Mind Map as a **mandatory requirement**. 
-Do not summarize, simplify, or omit any details. 
-Every "Feature" node represents a specific functionality that must be implemented in the code.
-Every "Requirement" description contains vital logic or constraints that must be preserved.
+# Software Description & Core Value
+This software is designed to meet the following high-level goals:
+${projectGoal}
 
-# Detailed Product Requirements Map
+# Detailed Product Requirements Map (Functional Specifications)
+The following is the complete, finalized specification of the system. 
+Every node represents a mandatory feature. Every "Technical Spec" describes the exact implementation logic required.
+
 ${treeText}
 
-# Implementation Task
-Please generate the complete codebase for this project.
+# Implementation Task for Google AI Studio Build
+Please proceed to build this application by following these steps strictly:
 
-## 1. Technical Architecture
-- Analyze the requirements to select the most robust tech stack (e.g., React/Next.js + Node/Python + SQL/NoSQL).
-- Ensure the architecture supports all modules listed above.
+## 1. Technical Architecture & Stack
+- Analyze the requirements above.
+- Select the most appropriate modern tech stack (e.g., React/Vue/Next.js for Frontend, Node/Python/Go for Backend, PostgreSQL/MongoDB for DB) unless specified otherwise in the "Critical Constraints".
+- Define the high-level architecture diagram (text-based).
 
 ## 2. File Structure & Configuration
-- Output a comprehensive file structure.
-- Include necessary config files (package.json, .env.example, etc.).
+- Output a comprehensive file structure for the entire project.
+- Generate all necessary configuration files (package.json, requirements.txt, tsconfig.json, .env.example, etc.).
 
-## 3. Core Logic Implementation
-- **DO NOT** just generate placeholders. 
-- Implement the actual logic for the features described in the map.
-- If a node says "User Login (WeChat/Phone)", implement the logic for both WeChat and Phone authentication handling.
-- If a description mentions specific data fields or workflows, implement them strictly.
+## 3. Step-by-Step Implementation Plan
+- Break down the development into logical steps (e.g., "Step 1: Auth Module", "Step 2: Database Schema").
+- For each step, explain what files will be created or modified.
 
-## 4. Quality Assurance
-- Add comments explaining how complex requirements are handled.
-- Ensure error handling and edge cases are considered based on the product goals.
+## 4. Code Generation (Core Logic)
+- **DO NOT** generate placeholders or comments saying "implement logic here".
+- **Implement the actual logic** described in the "Technical Spec" sections of the map.
+- Ensure proper error handling, input validation, and security practices (AuthN/AuthZ) are implemented.
 
-Please proceed with building the application, ensuring no detail from the requirements map is lost.
+## 5. Quality Assurance & Testing
+- Briefly describe how to test the core features.
+
+Please start by generating the **Project File Structure** and the **Core Configuration** files.
 `;
 
                 document.getElementById('prompt-output').value = finalPrompt;
@@ -1067,7 +1197,6 @@ Please proceed with building the application, ensuring no detail from the requir
                 setTimeout(() => feedback.classList.add('hidden'), 2000);
             }
 
-            // --- Settings ---
             openSettings() {
                 document.getElementById('setting-base-url').value = this.settings.baseUrl;
                 document.getElementById('setting-api-key').value = this.settings.apiKey;
