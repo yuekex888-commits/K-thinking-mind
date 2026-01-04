@@ -7,39 +7,42 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Custom Scrollbar */
+        /* --- 基础样式 --- */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f8fafc; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Node Styles */
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+
+        /* --- 节点样式 (核心交互) --- */
         .node { 
-            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s;
-            /* Ensure automatic height */
+            transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.2s;
             height: auto !important; 
             min-height: 80px;
+            max-width: 400px;
         }
-        .node.selected { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
-        .node:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .node.selected { 
+            border-color: #3b82f6; 
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); 
+            z-index: 50;
+        }
+        .node:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); 
+            z-index: 40;
+        }
         
-        /* SVG Connector Lines */
         .connector { fill: none; stroke: #94a3b8; stroke-width: 2px; transition: d 0.3s ease; }
-
-        /* Modal & Overlays */
         .modal-backdrop { backdrop-filter: blur(4px); }
         
-        /* Interaction Components */
         .custom-checkbox:checked + div { background-color: #eff6ff; border-color: #3b82f6; color: #1e40af; }
         .custom-checkbox:checked + div .check-icon { opacity: 1; }
         .option-radio:checked + div { background-color: #fff7ed; border-color: #f97316; color: #9a3412; font-weight: 600; }
         
         svg { overflow: visible !important; }
-        
-        /* Content Editable Fixes */
-        [contenteditable]:focus { outline: none; background-color: rgba(241, 245, 249, 0.5); border-radius: 2px; }
-        
-        /* Knowledge Base Specific */
+        [contenteditable]:focus { outline: none; background-color: rgba(241, 245, 249, 0.8); border-radius: 4px; padding: 2px; }
+
         .kb-bg {
             background-color: #fffbeb;
             background-image: linear-gradient(#fef3c7 1px, transparent 1px);
@@ -49,18 +52,18 @@
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden font-sans">
+<body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden">
 
-    <!-- Top Navigation / Toolbar -->
+    <!-- 顶部工具栏 -->
     <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shadow-sm z-20">
         <div class="flex items-center space-x-4">
             <div class="font-bold text-xl text-blue-600 flex items-center">
-                <span class="bg-blue-600 text-white p-1 rounded mr-2"><i class="fa-solid fa-network-wired text-sm"></i></span>
+                <span class="bg-blue-100 text-blue-600 p-1.5 rounded mr-2"><i class="fa-solid fa-network-wired"></i></span>
                 AI Architect Map
             </div>
             
             <div class="h-6 w-px bg-slate-300 mx-2"></div>
-            <!-- Project Actions -->
+            <!-- 项目操作 -->
             <div class="flex space-x-1">
                 <button onclick="app.newProject()" class="text-sm px-3 py-1.5 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded text-slate-600 transition" title="新建项目"><i class="fa-solid fa-file mr-1"></i> 新建</button>
                 <button onclick="app.saveProject()" class="text-sm px-3 py-1.5 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded text-slate-600 transition" title="保存项目"><i class="fa-solid fa-save mr-1"></i> 保存</button>
@@ -69,7 +72,7 @@
             </div>
             
             <div class="h-6 w-px bg-slate-300 mx-2"></div>
-            <!-- Edit Actions -->
+            <!-- 编辑操作 -->
             <div class="flex space-x-1">
                 <button onclick="app.undo()" class="text-sm px-2 py-1.5 hover:bg-slate-50 rounded text-slate-600 transition" title="撤销 (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
                 <button onclick="app.redo()" class="text-sm px-2 py-1.5 hover:bg-slate-50 rounded text-slate-600 transition" title="重做 (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
@@ -82,25 +85,18 @@
         <div class="flex items-center space-x-3">
              <button onclick="app.openHelp()" class="text-slate-500 hover:text-blue-600 transition text-lg px-2" title="软件使用说明书"><i class="fa-regular fa-circle-question"></i></button>
              <button onclick="app.generatePrompt()" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm px-4 py-2 rounded shadow-md transition font-bold flex items-center">
-                <i class="fa-solid fa-microchip mr-2"></i> 生成最终 Prompt
+                <i class="fa-solid fa-brain mr-2"></i> 生成最终 Prompt
             </button>
             <button onclick="app.openSettings()" class="text-slate-400 hover:text-blue-600 transition text-lg px-2"><i class="fa-solid fa-gear"></i></button>
         </div>
     </header>
 
-    <!-- Main Workspace -->
+    <!-- 主工作区 -->
     <div class="flex-1 flex overflow-hidden">
-        
-        <!-- Left: Canvas Area -->
         <div id="canvas-container" class="flex-1 bg-slate-50 relative overflow-hidden cursor-move" onmousedown="app.startPan(event)">
-            <!-- Grid Background -->
-            <div class="absolute inset-0 pointer-events-none opacity-50" 
-                 style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px;"></div>
-            
+            <div class="absolute inset-0 pointer-events-none opacity-50" style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px;"></div>
             <svg id="svg-layer" class="absolute top-0 left-0 w-full h-full pointer-events-none origin-top-left" style="z-index: 0;"></svg>
             <div id="node-layer" class="absolute top-0 left-0 origin-top-left" style="z-index: 1;"></div>
-            
-            <!-- Floating Zoom -->
             <div class="absolute bottom-4 left-4 flex flex-col bg-white shadow-lg rounded-lg border border-slate-200 overflow-hidden">
                 <button onclick="app.zoomIn()" class="p-3 hover:bg-slate-50 text-slate-600 border-b border-slate-100"><i class="fa-solid fa-plus"></i></button>
                 <button onclick="app.resetZoom()" class="p-2 hover:bg-slate-50 text-slate-600 border-b border-slate-100 text-xs font-bold">100%</button>
@@ -108,190 +104,150 @@
             </div>
         </div>
 
-        <!-- Right: AI Interaction Panel -->
+        <!-- 右侧：AI 交互面板 -->
         <div class="w-[500px] bg-white border-l border-slate-200 flex flex-col shadow-xl z-10 relative">
             <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                 <h2 class="font-bold text-slate-800 flex items-center">
                     <i class="fa-solid fa-robot text-blue-600 mr-2"></i> 智能协作面板
                 </h2>
-                <div class="text-xs text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">v4.2 Stable</div>
+                <div class="text-xs text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">v5.0 Ultimate</div>
             </div>
 
             <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
-                
-                <!-- 0. Project Knowledge Base (The Notepad) -->
+                <!-- 项目知识库 -->
                 <div class="interaction-card p-0 overflow-hidden border-yellow-300 shadow-md">
                     <div class="bg-yellow-100 px-4 py-2 border-b border-yellow-200 flex justify-between items-center">
                         <label class="font-bold text-yellow-800 text-sm flex items-center">
                             <i class="fa-solid fa-book-journal-whills mr-2"></i> 项目知识库 (Knowledge Base)
                         </label>
-                        <span class="text-[10px] text-yellow-700 bg-yellow-200/50 px-2 py-0.5 rounded border border-yellow-200">Prompt 核心参考</span>
+                        <span class="text-[10px] text-yellow-700 bg-yellow-200/50 px-2 py-0.5 rounded border border-yellow-200">显性记忆</span>
                     </div>
                     <div class="p-3 bg-yellow-50">
                         <p class="text-[10px] text-yellow-800/70 mb-2 leading-tight">
-                            此处存储项目的<strong class="text-yellow-900">绝对真理</strong>（如 API Keys、配色、必须使用的技术栈）。AI 会自动将对话中的关键决策追加到这里。您也可以手动修改。
+                            项目“宪法”。记录 API Key、配色、核心规则。AI 会自动追加。
                         </p>
-                        <textarea id="notepad-content" rows="6" class="w-full text-xs p-3 border border-yellow-300 rounded focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none resize-none transition kb-bg text-slate-700 shadow-inner" placeholder="- 核心目标: 待办事项APP&#10;- API Key: sk-xxxxxxxx&#10;- 前端框架: React + Tailwind&#10;- 特殊要求: 必须支持离线模式" oninput="app.saveNotepad(this.value)"></textarea>
+                        <textarea id="notepad-content" rows="6" class="w-full text-xs p-3 border border-yellow-300 rounded focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none resize-none transition kb-bg text-slate-700 shadow-inner" placeholder="- 核心目标: 待办事项APP&#10;- 全局配色: 极简白+蓝&#10;- API Key: sk-xxxx" oninput="app.saveNotepad(this.value)"></textarea>
                     </div>
                 </div>
 
-                <!-- Window 1: Command -->
+                <!-- 窗口 1: 修改指令 -->
                 <div class="interaction-card p-4 border-l-4 border-l-blue-500">
                     <div class="flex justify-between mb-2">
                         <label class="font-bold text-slate-700 text-sm">1. 修改指令</label>
-                        <span class="text-[10px] text-slate-400">告诉 AI 做什么</span>
+                        <span class="text-[10px] text-slate-400">输入需求，AI 会自动记录</span>
                     </div>
-                    <textarea id="ai-input-request" rows="2" class="w-full text-sm p-2 border border-slate-200 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="例如：细化‘用户登录’模块，增加微信扫码..."></textarea>
+                    <textarea id="ai-input-request" rows="2" class="w-full text-sm p-2 border border-slate-200 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="例如：帮我细化用户登录模块..."></textarea>
                 </div>
 
-                <!-- Window 2: Inquiry -->
+                <!-- 窗口 2: 深度问询 -->
                 <div class="interaction-card p-4 border-l-4 border-l-orange-400">
                     <div class="flex justify-between items-center mb-2">
-                        <label class="font-bold text-slate-700 text-sm">2. 深度问询 (细节确认)</label>
+                        <label class="font-bold text-slate-700 text-sm">2. 深度问询 (查漏补缺)</label>
                         <div class="flex items-center space-x-2">
-                            <button onclick="app.selectAllRecommendedQuestions()" id="btn-select-recommended" class="hidden text-[10px] bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 border border-orange-200">全选推荐</button>
-                            <span id="badge-question-status" class="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">待生成</span>
+                            <button onclick="app.selectAllRecommendedQuestions()" id="btn-select-recommended" class="hidden text-[10px] bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 border border-orange-200 font-bold transition">全选推荐</button>
+                            <span id="badge-question-status" class="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">等待AI分析</span>
                         </div>
                     </div>
-                    <div id="ai-question-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                        <div class="text-sm text-slate-400 italic p-3 text-center bg-slate-50 rounded border border-dashed border-slate-200">AI 将在此列出需要您决策的具体选项（如技术选型、业务逻辑等）</div>
+                    <div id="ai-question-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        <div class="text-sm text-slate-400 italic p-3 text-center bg-slate-50 rounded border border-dashed border-slate-200">AI 将提出 10-15 个问题，其中至少 5 个是产品级查漏补缺建议。</div>
                     </div>
                 </div>
 
-                <!-- Window 3: Suggestions -->
+                <!-- 窗口 3: 优化建议 -->
                 <div class="interaction-card p-4 border-l-4 border-l-purple-500">
                     <div class="flex justify-between items-center mb-2">
                         <label class="font-bold text-slate-700 text-sm">3. 优化建议 (10条)</label>
-                        <button onclick="app.toggleAllSuggestions()" class="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200">全选/取消</button>
+                        <button onclick="app.toggleAllSuggestions()" class="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 font-bold transition">全选/取消</button>
                     </div>
                     <div id="ai-suggestion-list" class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                        <div class="text-sm text-slate-400 italic p-3 text-center bg-slate-50 rounded border border-dashed border-slate-200">AI 将基于当前设计提供 10 条专业改进建议</div>
+                        <div class="text-sm text-slate-400 italic p-3 text-center bg-slate-50 rounded border border-dashed border-slate-200">AI 将基于当前设计提供 10 条专业改进建议。</div>
                     </div>
                 </div>
-
             </div>
 
-            <!-- Submit -->
+            <!-- 提交按钮 -->
             <div class="p-4 border-t border-slate-200 bg-white z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                 <button onclick="app.submitToAI()" class="group w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold py-3.5 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all flex justify-center items-center relative overflow-hidden">
-                    <span class="relative z-10 flex items-center text-base"><i class="fa-solid fa-paper-plane mr-2"></i> 提交所有变更 (知识库 + 选项 + 建议)</span>
+                    <span class="relative z-10 flex items-center text-base"><i class="fa-solid fa-paper-plane mr-2"></i> 一键提交 (同步记录到隐形历史)</span>
                 </button>
-                <p class="text-[10px] text-center text-slate-400 mt-2">AI 将自动更新知识库，且不会随意删除已有重要信息</p>
             </div>
         </div>
     </div>
 
-    <!-- Help Modal -->
+    <!-- 帮助 Modal -->
     <div id="help-modal" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex items-center justify-center modal-backdrop p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                <h3 class="font-bold text-xl text-slate-800"><i class="fa-solid fa-book-open mr-2 text-blue-600"></i>AI Architect Map 使用说明书</h3>
+                <h3 class="font-bold text-xl text-slate-800"><i class="fa-solid fa-book-open mr-2 text-blue-600"></i>软件操作指南与核心理念</h3>
                 <button onclick="document.getElementById('help-modal').classList.add('hidden')" class="text-slate-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="flex-1 overflow-y-auto p-8 prose prose-slate max-w-none">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 gap-6">
+                    <div class="bg-blue-50 p-4 rounded border-l-4 border-blue-500">
+                        <strong class="text-blue-800 text-lg">核心理念</strong>
+                        <p class="text-sm text-blue-700 mt-2">本工具旨在帮助非技术背景的产品经理，通过 AI 辅助将模糊的需求转化为 **Google AI Studio** 可直接执行的完备代码生成指令 (Build Prompt)。</p>
+                    </div>
+                    
                     <div>
-                        <h4 class="text-blue-600 font-bold text-lg mb-4">1. 核心理念</h4>
-                        <p class="text-sm text-slate-600 mb-4">这是一个专为非技术背景的产品经理设计的 AI 辅助工具。它通过可视化导图和结构化问答，将模糊的想法转化为详尽的技术规格书。</p>
-                        
-                        <h4 class="text-blue-600 font-bold text-lg mb-4">2. 界面与操作</h4>
-                        <ul class="text-sm text-slate-600 space-y-2 list-disc list-inside">
-                            <li><strong>画布 (左侧)</strong>: 您的产品结构图。支持滚轮缩放、右键拖拽。</li>
-                            <li><strong>节点操作</strong>:
-                                <ul class="pl-4 list-circle mt-1 space-y-1">
-                                    <li>点击选中，双击编辑文字。</li>
-                                    <li><kbd class="bg-slate-100 border px-1 rounded">Tab</kbd> 添加子节点 (细化功能)。</li>
-                                    <li><kbd class="bg-slate-100 border px-1 rounded">Enter</kbd> 添加同级节点 (并列功能)。</li>
-                                    <li>节点宽度已优化，所有详情内容自动展开，无需滚动。</li>
-                                </ul>
-                            </li>
+                        <h4 class="font-bold text-slate-800 border-b pb-2">一、双重记忆系统</h4>
+                        <ul class="text-sm text-slate-600 list-disc pl-5 mt-2 space-y-2">
+                            <li><strong>显性记忆 (项目知识库)</strong>: 右上角的黄色记事本。记录项目的“宪法”（如 API Key、技术栈）。AI 会自动追加，您也可修改。</li>
+                            <li><strong>隐形记忆 (Content A)</strong>: 系统会自动在后台记录您的每一次修改指令、每一次问答选择、每一次采纳建议。这是生成最终 Prompt 的关键素材。</li>
                         </ul>
                     </div>
+
                     <div>
-                        <h4 class="text-blue-600 font-bold text-lg mb-4">3. AI 协作流 (右侧面板)</h4>
-                        <div class="bg-slate-50 p-4 rounded border border-slate-200 text-sm space-y-3">
-                            <div>
-                                <strong class="text-yellow-600"><i class="fa-solid fa-book-journal-whills"></i> 项目知识库 (重要!)</strong>
-                                <p class="text-xs mt-1">这是 AI 的长期记忆。凡是重要的信息（API Key、配色、必须用的数据库），AI 都会自动记在这里。<strong>生成最终代码时，这里的信息优先级最高。</strong></p>
-                            </div>
-                            <hr class="border-slate-200">
-                            <div>
-                                <strong>窗口 1: 修改指令</strong>
-                                <p class="text-xs mt-1">您想改什么？直接告诉 AI。</p>
-                            </div>
-                            <div>
-                                <strong>窗口 2: 深度问询</strong>
-                                <p class="text-xs mt-1">AI 会发现您逻辑不通的地方并提问。点击“全选推荐”可快速填选最主流的技术方案。</p>
-                            </div>
-                            <div>
-                                <strong>窗口 3: 优化建议</strong>
-                                <p class="text-xs mt-1">AI 提出的 10 条专业建议，勾选即代表采纳并落实到导图中。</p>
-                            </div>
-                        </div>
+                        <h4 class="font-bold text-slate-800 border-b pb-2">二、终极 Prompt 生成机制 (三步法)</h4>
+                        <p class="text-sm text-slate-600 mt-2">点击“生成最终 Prompt”时，AI 将执行海量运算：</p>
+                        <ol class="text-sm text-slate-600 list-decimal pl-5 mt-2 space-y-2">
+                            <li><strong>整理历史 (Content A -> Content B)</strong>: AI 产品总监整理所有隐形历史，生成一份详尽的需求演变史。</li>
+                            <li><strong>架构设计 (Map + KB -> Content C)</strong>: AI 架构师基于当前的思维导图和知识库，生成技术规格书。</li>
+                            <li><strong>终极融合 (B + C -> Content D)</strong>: AI 总设计师将需求史与技术规格融合，生成最终指令。</li>
+                            <li><strong>最终产出</strong>: Content B (需求全貌) + Content D (构建指令)。</li>
+                        </ol>
                     </div>
-                </div>
-                <div class="mt-8 pt-8 border-t border-slate-200">
-                    <h4 class="text-emerald-600 font-bold text-lg mb-2">4. 最终产出 (Generate Prompt)</h4>
-                    <p class="text-sm text-slate-600">
-                        当您觉得导图完善后，点击顶部绿色的 <strong>“AI 深度生成 Prompt”</strong> 按钮。
-                        系统会调用一个专门的“Prompt 工程师”AI，结合您的导图结构和知识库中的约束，撰写一份<strong>万字长文级</strong>的开发文档。这份文档可以直接发给 Google AI Studio 或 ChatGPT 用于生成最终代码。
-                    </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Loading Overlay -->
+    <!-- Loading -->
     <div id="loading-overlay" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex items-center justify-center modal-backdrop">
         <div class="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center max-w-sm w-full mx-4">
             <div class="spinner mb-6"></div>
             <h3 id="loading-text" class="text-xl font-bold text-slate-800 animate-pulse">AI 正在思考...</h3>
-            <p id="loading-subtext" class="text-sm text-slate-500 mt-2 text-center">正在分析决策、更新导图并整理知识库</p>
+            <p id="loading-subtext" class="text-sm text-slate-500 mt-2 text-center">正在处理...</p>
             <div class="mt-4 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                 <div class="bg-blue-500 h-full rounded-full animate-[width_2s_ease-in-out_infinite]" style="width: 50%"></div>
             </div>
         </div>
     </div>
 
-    <!-- Settings Modal -->
+    <!-- Settings -->
     <div id="settings-modal" class="fixed inset-0 bg-black/40 z-50 hidden flex items-center justify-center modal-backdrop">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                <h3 class="font-bold text-lg text-slate-800">系统设置</h3>
+                <h3 class="font-bold text-lg text-slate-800">设置</h3>
                 <button onclick="app.closeSettings()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Base URL</label>
-                    <input type="text" id="setting-base-url" class="w-full p-2.5 border border-slate-300 rounded text-sm" placeholder="https://api.grsai.com/v1/chat/completions">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">API Key</label>
-                    <div class="relative">
-                        <input type="password" id="setting-api-key" class="w-full p-2.5 border border-slate-300 rounded text-sm pr-10">
-                        <button onclick="app.togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                            <i class="fa-regular fa-eye" id="eye-icon"></i>
-                        </button>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Model Name</label>
-                    <input type="text" id="setting-model" class="w-full p-2.5 border border-slate-300 rounded text-sm" placeholder="gemini-3-pro">
-                </div>
+                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Base URL</label><input type="text" id="setting-base-url" class="w-full p-2.5 border border-slate-300 rounded text-sm"></div>
+                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">API Key</label><input type="password" id="setting-api-key" class="w-full p-2.5 border border-slate-300 rounded text-sm"></div>
+                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Model</label><input type="text" id="setting-model" class="w-full p-2.5 border border-slate-300 rounded text-sm"></div>
             </div>
             <div class="bg-slate-50 px-6 py-4 flex justify-end">
-                <button onclick="app.saveSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded text-sm font-bold shadow-sm transition">保存设置</button>
+                <button onclick="app.saveSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded text-sm font-bold shadow-sm transition">保存</button>
             </div>
         </div>
     </div>
 
-    <!-- Prompt Export Modal -->
+    <!-- Prompt Export -->
     <div id="prompt-modal" class="fixed inset-0 bg-black/40 z-50 hidden flex items-center justify-center modal-backdrop">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
                 <div>
-                    <h3 class="font-bold text-lg text-slate-800 flex items-center"><i class="fa-solid fa-file-code text-emerald-600 mr-2"></i>最终开发指令 (Prompt)</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">由 AI 架构师基于知识库和思维导图生成的完整技术规格书</p>
+                    <h3 class="font-bold text-lg text-slate-800 flex items-center"><i class="fa-solid fa-file-code text-emerald-600 mr-2"></i>最终开发指令 (Content B + D)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">三阶段 AI 协同生成结果</p>
                 </div>
                 <button onclick="document.getElementById('prompt-modal').classList.add('hidden')" class="text-slate-400 hover:text-red-500 text-xl"><i class="fa-solid fa-times"></i></button>
             </div>
@@ -308,19 +264,17 @@
     </div>
 
     <script>
-        // --- Utilities ---
         const uuid = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
         
-        // --- Default Data ---
         const defaultTree = {
             id: 'root',
             topic: '我的新产品',
-            description: '点击此处开始描述您的产品核心目标',
-            details: '这里将显示详细的技术实现方案...会自动展开显示所有内容',
+            description: '描述产品核心目标',
+            details: '技术细节将自动展开显示...',
             expanded: true,
             children: [
-                { id: 'c1', topic: '核心功能', description: '例如：用户登录、购物车', details: '这里是详细描述，没有滚动条，自动撑开高度...', expanded: true, children: [] },
-                { id: 'c2', topic: '数据管理', description: '例如：后台统计、订单管理', details: '这里是详细描述，没有滚动条，自动撑开高度...', expanded: true, children: [] }
+                { id: 'c1', topic: '核心功能', description: '例如：登录', details: '待补充...', expanded: true, children: [] },
+                { id: 'c2', topic: '数据管理', description: '例如：后台', details: '待补充...', expanded: true, children: [] }
             ]
         };
 
@@ -338,7 +292,10 @@
                 this.lastMouseY = 0;
                 
                 this.aiContext = { lastQuestions: [], lastSuggestions: [] };
-                this.notepadContent = ""; // Knowledge Base Content
+                this.notepadContent = "";
+                
+                // Content A: Hidden History Log
+                this.hiddenHistory = []; 
 
                 this.settings = {
                     baseUrl: localStorage.getItem('ai_baseUrl') || 'https://api.grsai.com/v1/chat/completions',
@@ -360,40 +317,25 @@
                 
                 window.addEventListener('mousemove', (e) => {
                     if (this.isDragging) {
-                        const dx = e.clientX - this.lastMouseX;
-                        const dy = e.clientY - this.lastMouseY;
-                        this.translateX += dx;
-                        this.translateY += dy;
+                        this.translateX += e.clientX - this.lastMouseX;
+                        this.translateY += e.clientY - this.lastMouseY;
                         this.lastMouseX = e.clientX;
                         this.lastMouseY = e.clientY;
                         this.updateTransform();
                     }
                 });
-                window.addEventListener('mouseup', () => {
-                    this.isDragging = false;
-                    this.canvasContainer.style.cursor = 'move';
-                });
-                
+                window.addEventListener('mouseup', () => { this.isDragging = false; this.canvasContainer.style.cursor = 'move'; });
                 this.canvasContainer.addEventListener('wheel', (e) => {
                     e.preventDefault();
-                    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-                    const newScale = Math.min(Math.max(0.2, this.scale + delta), 3);
-                    if (newScale !== this.scale) {
-                        this.scale = newScale;
-                        this.updateTransform();
-                    }
+                    const newScale = Math.min(Math.max(0.2, this.scale + (e.deltaY > 0 ? -0.1 : 0.1)), 3);
+                    if (newScale !== this.scale) { this.scale = newScale; this.updateTransform(); }
                 }, { passive: false });
             }
 
             setupShortcuts() {
                 document.addEventListener('keydown', (e) => {
-                    const tag = e.target.tagName;
-                    const isEditable = e.target.isContentEditable;
-                    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-                    if (isEditable) {
-                        if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
-                        return;
-                    }
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                    if (e.target.isContentEditable && e.key === 'Enter') { e.preventDefault(); e.target.blur(); return; }
                     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); this.undo(); }
                     if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); this.redo(); }
                     if (e.key === 'Delete' || e.key === 'Backspace') { if(this.selectedNodeId && this.selectedNodeId !== 'root') this.deleteNode(); }
@@ -402,31 +344,31 @@
                 });
             }
 
-            // --- Storage & History ---
+            // --- History ---
             pushHistory() {
                 if (this.history.length >= 15) this.history.shift();
-                this.history.push({ tree: JSON.parse(JSON.stringify(this.treeData)), notepad: this.notepadContent });
+                this.history.push({ tree: JSON.parse(JSON.stringify(this.treeData)), notepad: this.notepadContent, hidden: JSON.parse(JSON.stringify(this.hiddenHistory)) });
                 this.future = [];
                 this.saveToStorage();
             }
-
             undo() {
                 if (this.history.length === 0) return;
-                this.future.push({ tree: JSON.parse(JSON.stringify(this.treeData)), notepad: this.notepadContent });
+                this.future.push({ tree: JSON.parse(JSON.stringify(this.treeData)), notepad: this.notepadContent, hidden: JSON.parse(JSON.stringify(this.hiddenHistory)) });
                 const prev = this.history.pop();
                 this.treeData = prev.tree;
                 this.notepadContent = prev.notepad;
+                this.hiddenHistory = prev.hidden || [];
                 this.updateNotepadUI();
                 this.render();
                 this.saveToStorage();
             }
-
             redo() {
                 if (this.future.length === 0) return;
                 this.pushHistory();
                 const next = this.future.pop();
                 this.treeData = next.tree;
                 this.notepadContent = next.notepad;
+                this.hiddenHistory = next.hidden || [];
                 this.updateNotepadUI();
                 this.render();
                 this.saveToStorage();
@@ -436,46 +378,38 @@
                 localStorage.setItem('mindmap_data', JSON.stringify(this.treeData));
                 localStorage.setItem('mindmap_ai_ctx', JSON.stringify(this.aiContext));
                 localStorage.setItem('mindmap_notepad', this.notepadContent);
+                localStorage.setItem('mindmap_hidden_history', JSON.stringify(this.hiddenHistory));
             }
 
             loadFromStorage() {
                 const saved = localStorage.getItem('mindmap_data');
                 const ctx = localStorage.getItem('mindmap_ai_ctx');
                 const note = localStorage.getItem('mindmap_notepad');
-                if (saved) this.treeData = JSON.parse(saved);
-                if (ctx) {
-                    try {
-                        const parsedCtx = JSON.parse(ctx);
-                        if (parsedCtx.lastQuestions && parsedCtx.lastQuestions.length > 0 && typeof parsedCtx.lastQuestions[0] === 'string') parsedCtx.lastQuestions = [];
-                        this.aiContext = parsedCtx;
-                    } catch(e) { this.aiContext = { lastQuestions: [], lastSuggestions: [] }; }
-                }
-                if (note) this.notepadContent = note;
-                this.updateNotepadUI();
+                const hidden = localStorage.getItem('mindmap_hidden_history');
                 
+                if (saved) this.treeData = JSON.parse(saved);
+                if (ctx) { try { this.aiContext = JSON.parse(ctx); } catch(e) { this.aiContext = { lastQuestions: [], lastSuggestions: [] }; } }
+                if (note) this.notepadContent = note;
+                if (hidden) this.hiddenHistory = JSON.parse(hidden);
+                
+                this.updateNotepadUI();
                 const rect = this.canvasContainer.getBoundingClientRect();
                 this.translateX = rect.width / 2 - 100;
                 this.translateY = rect.height / 2 - 50;
                 this.updateTransform();
             }
 
-            saveNotepad(val) {
-                this.notepadContent = val;
-                localStorage.setItem('mindmap_notepad', this.notepadContent);
-            }
-            
-            updateNotepadUI() {
-                const el = document.getElementById('notepad-content');
-                if(el) el.value = this.notepadContent;
-            }
+            saveNotepad(val) { this.notepadContent = val; localStorage.setItem('mindmap_notepad', this.notepadContent); }
+            updateNotepadUI() { const el = document.getElementById('notepad-content'); if(el) el.value = this.notepadContent; }
 
             // --- Project Ops ---
             newProject() {
-                if(confirm("确定新建项目吗？当前未保存的修改将丢失。")) {
+                if(confirm("确定新建项目吗？")) {
                     this.pushHistory();
                     this.treeData = JSON.parse(JSON.stringify(defaultTree));
                     this.aiContext = { lastQuestions: [], lastSuggestions: [] };
                     this.notepadContent = "";
+                    this.hiddenHistory = [];
                     this.updateNotepadUI();
                     document.getElementById('ai-input-request').value = '';
                     this.updateAIPanelUI();
@@ -483,16 +417,14 @@
                     this.saveToStorage();
                 }
             }
-
             saveProject() {
-                const data = { tree: this.treeData, notepad: this.notepadContent };
+                const data = { tree: this.treeData, notepad: this.notepadContent, hiddenHistory: this.hiddenHistory };
                 const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                a.download = `mindmap_project_${Date.now()}.json`;
+                a.download = `mindmap_${Date.now()}.json`;
                 a.click();
             }
-
             loadProject(input) {
                 const file = input.files[0];
                 if (!file) return;
@@ -501,13 +433,9 @@
                     try {
                         this.pushHistory();
                         const json = JSON.parse(e.target.result);
-                        if (json.tree) {
-                            this.treeData = json.tree;
-                            this.notepadContent = json.notepad || "";
-                        } else {
-                            this.treeData = json;
-                            this.notepadContent = "";
-                        }
+                        this.treeData = json.tree || json;
+                        this.notepadContent = json.notepad || "";
+                        this.hiddenHistory = json.hiddenHistory || [];
                         this.aiContext = { lastQuestions: [], lastSuggestions: [] };
                         this.updateAIPanelUI();
                         this.updateNotepadUI();
@@ -519,22 +447,20 @@
                 input.value = '';
             }
 
-            // --- Rendering Core (Two-Pass for Auto-Height) ---
+            // --- Rendering (Two-Pass) ---
             render() {
                 this.nodeLayer.innerHTML = '';
                 this.svgLayer.innerHTML = '';
-                const nodeWidth = 320; // WIDER
+                const nodeWidth = 320; 
                 const gapX = 140;
                 const gapY = 30;
 
-                // Pass 1: Create DOM elements to measure height
                 const createDOM = (node) => {
                     const el = document.createElement('div');
                     const isSelected = this.selectedNodeId === node.id;
                     el.className = `node absolute flex flex-col bg-white border rounded-lg shadow-sm cursor-pointer select-none transition-all ${isSelected ? 'selected' : 'border-slate-300 hover:border-slate-400'}`;
                     el.style.width = `${nodeWidth}px`;
                     el.style.left = '-9999px';
-                    el.style.top = '-9999px';
                     
                     el.innerHTML = `
                         <div class="px-4 py-3 w-full flex flex-col relative">
@@ -554,45 +480,32 @@
                     el.onmousedown = (e) => e.stopPropagation();
 
                     this.nodeLayer.appendChild(el);
-                    node._el = el; // Store ref
+                    node._el = el; 
 
-                    if (node.children && node.expanded) {
-                        node.children.forEach(createDOM);
-                    }
+                    if (node.children && node.expanded) node.children.forEach(createDOM);
                 };
 
-                // Pass 2: Measure real heights
                 const measureTree = (node) => {
-                    node._contentH = node._el.offsetHeight; // Real height from DOM
-                    
+                    node._contentH = node._el.offsetHeight; 
                     if (!node.children || node.children.length === 0 || !node.expanded) {
                         node._h = node._contentH;
                         return node._h;
                     }
-                    
                     let childrenTotalH = 0;
-                    node.children.forEach(child => {
-                        childrenTotalH += measureTree(child) + gapY;
-                    });
+                    node.children.forEach(child => childrenTotalH += measureTree(child) + gapY);
                     childrenTotalH -= gapY;
-                    
                     node._h = Math.max(node._contentH, childrenTotalH);
                     return node._h;
                 };
 
-                // Pass 3: Layout and Position
                 const layoutTree = (node, x, y) => {
                     node._x = x; node._y = y;
-                    
-                    // Apply position
                     node._el.style.left = `${x}px`;
                     node._el.style.top = `${y - node._contentH / 2}px`;
                     
                     if (node.children && node.children.length > 0 && node.expanded) {
                         let childrenBlockH = 0;
                         node.children.forEach(c => childrenBlockH += c._h + gapY);
-                        childrenBlockH -= gapY;
-                        
                         let currentChildY = y - childrenBlockH / 2;
                         
                         node.children.forEach(child => {
@@ -636,45 +549,25 @@
             zoomOut() { this.scale = Math.max(this.scale - 0.1, 0.2); this.updateTransform(); }
             resetZoom() { this.scale = 1; this.updateTransform(); }
 
-            // --- Node Operations (In-Place Update Fix) ---
+            // --- Node Ops ---
             selectNode(id) {
                 if (this.selectedNodeId === id) return;
-                
                 const prevId = this.selectedNodeId;
                 this.selectedNodeId = id;
-
-                // Smart DOM Update: Only update the affected nodes to avoid full re-render flickering
                 const prevNode = prevId ? this.findNode(prevId) : null;
                 const currNode = this.findNode(id);
-
                 if ((!prevId || (prevNode && prevNode._el)) && (currNode && currNode._el)) {
                     if (prevNode) this.updateNodeDOM(prevNode, false);
                     this.updateNodeDOM(currNode, true);
-                } else {
-                    // Fallback to full render if DOM refs are missing (rare)
-                    this.render();
-                }
+                } else { this.render(); }
             }
-
             updateNodeDOM(node, isSelected) {
                 const el = node._el;
                 if (!el) return;
-                
-                // 1. Update Classes (for style)
                 el.className = `node absolute flex flex-col bg-white border rounded-lg shadow-sm cursor-pointer select-none transition-all ${isSelected ? 'selected' : 'border-slate-300 hover:border-slate-400'}`;
-                
-                // 2. Update ContentEditable (for behavior)
                 const titleDiv = el.querySelector('.node-title');
-                if (titleDiv) {
-                    if (isSelected) {
-                        titleDiv.setAttribute('contenteditable', 'true');
-                        // Optional: trigger focus if desired, but might be annoying during fast switching
-                    } else {
-                        titleDiv.removeAttribute('contenteditable');
-                    }
-                }
+                if (titleDiv) isSelected ? titleDiv.setAttribute('contenteditable', 'true') : titleDiv.removeAttribute('contenteditable');
             }
-
             findNode(id, node = this.treeData) { if (node.id === id) return node; if (node.children) { for (let child of node.children) { const found = this.findNode(id, child); if (found) return found; } } return null; }
             findParent(id, node = this.treeData) { if (node.children) { for (let child of node.children) { if (child.id === id) return node; const found = this.findParent(id, child); if (found) return found; } } return null; }
             toggleNode(id, e) { e.stopPropagation(); const node = this.findNode(id); if (node) { node.expanded = !node.expanded; this.render(); } }
@@ -687,7 +580,7 @@
                     parent.expanded = true;
                     if(!parent.children) parent.children = [];
                     const newId = uuid();
-                    parent.children.push({ id: newId, topic: '新功能', description: '', details: 'AI 将自动补充技术细节...', children: [], expanded: true });
+                    parent.children.push({ id: newId, topic: '新功能', description: '', details: '详细描述...', children: [], expanded: true });
                     this.render();
                     this.selectNode(newId);
                 }
@@ -698,7 +591,7 @@
                 if (parent) {
                     this.pushHistory();
                     const newId = uuid();
-                    parent.children.push({ id: newId, topic: '新功能', description: '', details: 'AI 将自动补充技术细节...', children: [], expanded: true });
+                    parent.children.push({ id: newId, topic: '新功能', description: '', details: '详细描述...', children: [], expanded: true });
                     this.render();
                     this.selectNode(newId);
                 }
@@ -714,7 +607,7 @@
                 }
             }
 
-            // --- AI Panel UI ---
+            // --- AI UI ---
             updateAIPanelUI() {
                 const questionList = document.getElementById('ai-question-list');
                 const suggestionList = document.getElementById('ai-suggestion-list');
@@ -754,7 +647,7 @@
                     qBadge.className = "text-[10px] text-white bg-orange-500 px-2 py-0.5 rounded animate-pulse";
                     if(btnSelectRecommended) btnSelectRecommended.classList.remove('hidden');
                 } else {
-                    questionList.innerHTML = '<div class="text-sm text-slate-400 italic p-3 text-center bg-slate-50 rounded border border-dashed border-slate-200">AI 将在此列出需要您决策的具体选项（如技术选型、业务逻辑等）</div>';
+                    questionList.innerHTML = '<div class="text-sm text-slate-400 italic p-3 text-center bg-slate-50 rounded border border-dashed border-slate-200">AI 将在此提出 10-15 个问题，其中至少 5 个是产品级查漏补缺建议。</div>';
                     qBadge.innerText = "待生成";
                     qBadge.className = "text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded";
                     if(btnSelectRecommended) btnSelectRecommended.classList.add('hidden');
@@ -769,7 +662,7 @@
                         suggestionList.appendChild(item);
                     });
                 } else {
-                    suggestionList.innerHTML = '<div class="text-sm text-slate-400 italic p-3 text-center bg-slate-50 rounded border border-dashed border-slate-200">AI 将基于当前设计提供 10 条专业改进建议</div>';
+                    suggestionList.innerHTML = '<div class="text-sm text-slate-400 italic p-3 text-center bg-slate-50 rounded border border-dashed border-slate-200">AI 将基于当前设计提供 10 条专业改进建议。</div>';
                 }
             }
 
@@ -815,7 +708,7 @@
                 this.closeSettings();
             }
 
-            // --- AI Interaction ---
+            // --- AI Interaction (Chain of Thought) ---
             async submitToAI() {
                 if (document.activeElement) document.activeElement.blur();
                 await new Promise(resolve => setTimeout(resolve, 50));
@@ -835,32 +728,39 @@
                 const checkedSuggestions = Array.from(document.querySelectorAll('input[name="ai-suggestion"]:checked')).map(cb => cb.value);
 
                 if (!reqText && questionResponses.length === 0 && checkedSuggestions.length === 0) {
-                    alert("请至少进行一项操作：\n1. 输入修改指令\n2. 确认细节选项\n3. 勾选改进建议");
-                    return;
+                    alert("请至少进行一项操作"); return;
                 }
+
+                // 1. Record to Hidden History (Content A)
+                const newHistoryEntry = {
+                    timestamp: new Date().toISOString(),
+                    userRequest: reqText,
+                    qna: questionResponses,
+                    suggestions: checkedSuggestions
+                };
+                this.hiddenHistory.push(newHistoryEntry);
+                this.pushHistory(); // Save state
 
                 const loader = document.getElementById('loading-overlay');
                 document.getElementById('loading-text').innerText = "AI 正在思考架构...";
-                document.getElementById('loading-subtext').innerText = "正在同步更新思维导图与项目知识库";
+                document.getElementById('loading-subtext').innerText = "正在分析指令、更新导图并同步知识库";
                 loader.classList.remove('hidden');
 
                 const systemPrompt = `
-你是一位**资深产品架构师和全栈技术负责人**。你的目标是协助用户（非技术背景的产品经理）构建完美的软件方案。
+你是一位**资深产品架构师**。
+**核心任务**：帮助用户完善产品思维导图和知识库。
 
-**核心指令：项目知识库 (Project Knowledge Base) 管理**
-1. **最高优先级**：\`currentNotepad\` 中的信息是本项目的“宪法”。
-2. **自动追加 (Append Only)**：
-   - 仔细分析用户的【指令】、【问答反馈】、【采纳的建议】。
-   - 如果发现关键决策（如：确认使用 JWT、主色调#334455、API Key、必须支持离线），请**必须**将其追加到 \`updatedNotepad\`。
-   - **切记**：除非用户明确要求“删除”某条旧信息，否则不要删除已有内容。只进行合并、去重、追加。
-3. **输出**：在返回的 JSON 中，\`updatedNotepad\` 字段应包含“旧内容 + 新追加的重要信息”。
+**指令 1：更新知识库 (Notepad)**
+- 检查用户输入，提取关键信息（API Key、配色、技术栈等）。
+- **自动追加**到 \`updatedNotepad\`，**只增不减**。
 
-**任务流程**：
-1. **更新导图**：根据输入完善 JSON 树。确保每个节点都有 \`details\` 字段，填写详细的技术实现逻辑（前端交互、后端API、数据结构）。
-2. **生成询问**：针对当前设计，提出 **10-15个** 具体问题。
-   - **关键**：每个问题必须包含 \`options\`。
-   - **推荐置顶**：将你认为**最专业、最推荐**的选项放在 \`options[0]\`，方便用户全选。
-3. **生成建议**：提供 **10条** 具体的优化建议。
+**指令 2：深度问询 (Inquiry)**
+- 生成 10-15 个问题。
+- **强制要求**：其中至少 5 个问题必须是**产品经理视角的查漏补缺**（例如：是否有数据导出？是否需要多语言？）。
+- 每个问题必须提供 \`options\`，且**推荐选项放在第一位**。
+
+**指令 3：更新导图**
+- 根据输入更新 JSON 树，确保 \`details\` 字段详实。
 
 **输入数据**：
 - 知识库: \`currentNotepad\`
@@ -868,11 +768,11 @@
 - 问答: \`questionResponses\`
 - 建议: \`acceptedSuggestions\`
 
-**输出 JSON 格式**：
+**输出 JSON**：
 {
-    "updatedTree": { ...JSON树, 必须含 details ... },
-    "updatedNotepad": "更新后的知识库全文 (String)...",
-    "clarificationQuestions": [ { "question": "...", "options": ["推荐A", "备选B"] }, ... ],
+    "updatedTree": { ... },
+    "updatedNotepad": "...",
+    "clarificationQuestions": [ { "question": "...", "options": ["推荐A", "B"] }, ... ],
     "suggestions": ["...", ...]
 }
 `;
@@ -889,24 +789,15 @@
                         body: JSON.stringify({ model: this.settings.model, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }], temperature: 0.7 })
                     });
                     if (!response.ok) throw new Error(`API Error: ${response.status}`);
-                    
                     const data = await response.json();
-                    let content = data.choices[0].message.content;
-                    content = content.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/^```json\s*/, '').replace(/\s*```$/, '');
-                    
-                    // JSON Repair attempt if needed
-                    const jsonStart = content.indexOf('{');
-                    const jsonEnd = content.lastIndexOf('}');
+                    let content = data.choices[0].message.content.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/^```json\s*/, '').replace(/\s*```$/, '');
+                    const jsonStart = content.indexOf('{'); const jsonEnd = content.lastIndexOf('}');
                     if(jsonStart > -1 && jsonEnd > -1) content = content.substring(jsonStart, jsonEnd+1);
-
                     const result = JSON.parse(content);
 
                     this.pushHistory(); 
                     this.treeData = result.updatedTree;
-                    if (result.updatedNotepad) {
-                        this.notepadContent = result.updatedNotepad;
-                        this.updateNotepadUI();
-                    }
+                    if (result.updatedNotepad) { this.notepadContent = result.updatedNotepad; this.updateNotepadUI(); }
                     this.aiContext.lastQuestions = result.clarificationQuestions || [];
                     this.aiContext.lastSuggestions = result.suggestions || [];
 
@@ -918,60 +809,88 @@
                 finally { loader.classList.add('hidden'); }
             }
 
+            // --- 3-Stage Prompt Generation ---
             async generatePrompt() {
                 if (this.treeData.children.length === 0) { alert("导图内容为空"); return; }
                 
                 const loader = document.getElementById('loading-overlay');
-                document.getElementById('loading-text').innerText = "AI 正在撰写万字规格书...";
-                document.getElementById('loading-subtext').innerText = "正在融合知识库与思维导图，生成终极 Prompt，请耐心等待...";
                 loader.classList.remove('hidden');
-
-                const systemPrompt = `
-You are an expert **Lead Architect & Prompt Engineer**. 
-Task: Generate a massive, exhaustive **Master Prompt** for another AI (like Google AI Studio) to build the entire software.
-
-**Source of Truth Hierarchy**:
-1. **Project Knowledge Base (Notepad)**: ABSOLUTE LAW. Contains API keys, mandatory tech stack, and core rules.
-2. **Mind Map Structure**: The functional skeleton.
-3. **Node Details**: The specific implementation logic.
-
-**Output Requirements**:
-- **DO NOT Summarize**. Be verbose. Be exhaustive. 
-- **Simulate Roles**: Act as a Product Manager + Architect + QA Lead writing the spec together.
-- **Format**: Markdown.
-
-**Prompt Structure to Generate**:
-1. **Project Manifesto**: Full description from the Notepad.
-2. **Architecture Blueprint**: 
-   - Frontend/Backend Tech Stack (strictly following Notepad).
-   - Database Schema (infer tables/fields from map).
-   - API Strategy.
-3. **Module-by-Module Specification**:
-   - Iterate through EVERY node in the Mind Map.
-   - For each feature, write a "User Story" + "Technical Implementation Guide".
-   - Include specific button states, error handling, edge cases.
-   - Example: "When clicking [Login], disable button, show spinner, call POST /api/auth. If 401, show 'Invalid credentials'."
-4. **Knowledge Injection**: Ensure all API keys and secrets from the Notepad are embedded in the env var section.
-
-**Tone**: Strict, Professional, Implementation-Ready.
-`;
-                const userPrompt = JSON.stringify({
-                    projectNotepad: this.notepadContent,
-                    fullTreeData: this.treeData
-                });
+                
+                const updateStatus = (text) => {
+                    document.getElementById('loading-text').innerText = "AI 深度生成中...";
+                    document.getElementById('loading-subtext').innerText = text;
+                };
 
                 try {
-                    const response = await fetch(this.settings.baseUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.settings.apiKey}` },
-                        body: JSON.stringify({ model: this.settings.model, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }], temperature: 0.7, max_tokens: 8000 })
-                    });
-                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
-                    const data = await response.json();
-                    document.getElementById('prompt-output').value = data.choices[0].message.content;
+                    // Stage 1: Generate Content B (History Summary)
+                    updateStatus("阶段 1/3: 正在整理需求演变史 (Content B)...");
+                    const prompt1 = `
+你是一位**产品总监**。请根据以下“隐形历史记录 (Content A)”，整理出一份**无比细致的需求演变与最终定稿 (Content B)**。
+- 总结用户的每一次修改、每一个决策。
+- 消除冲突，明确最终需求。
+- 格式：Markdown。
+
+**Content A (Raw History)**:
+${JSON.stringify(this.hiddenHistory)}
+`;
+                    const res1 = await this.callAI(prompt1);
+                    const contentB = res1;
+
+                    // Stage 2: Generate Content C (Tech Spec)
+                    updateStatus("阶段 2/3: 正在生成技术规格书 (Content C)...");
+                    const prompt2 = `
+你是一位**首席架构师**。请根据“项目知识库”和“思维导图”，生成一份**技术规格书 (Content C)**。
+- 严格遵守知识库中的约束 (API Key, Tech Stack)。
+- 将思维导图转化为技术实现细节。
+
+**Knowledge Base**: ${this.notepadContent}
+**Mind Map**: ${JSON.stringify(this.treeData)}
+`;
+                    const res2 = await this.callAI(prompt2);
+                    const contentC = res2;
+
+                    // Stage 3: Generate Content D (Final Synthesis)
+                    updateStatus("阶段 3/3: 正在合成最终 Build Prompt (Content D)...");
+                    const prompt3 = `
+你是一位**AI Prompt 工程师**。你的任务是生成最终发给 Google AI Studio 的 **Build Prompt (Content D)**。
+请结合 **Content B (需求详述)** 和 **Content C (技术规格)**：
+1. 以 Content C 为骨架。
+2. 用 Content B 中的细节填充血肉，确保没有遗漏任何历史决策。
+3. 输出一份完整的、可执行的 Prompt。
+`;
+                    const res3 = await this.callAI(prompt3, `Content B:\n${contentB}\n\nContent C:\n${contentC}`);
+                    const contentD = res3;
+
+                    // Final Output
+                    document.getElementById('prompt-output').value = `
+# PART 1: 需求演变与定稿 (Content B)
+${contentB}
+
+==================================================
+
+# PART 2: 最终构建指令 (Content D)
+${contentD}
+`;
                     document.getElementById('prompt-modal').classList.remove('hidden');
-                } catch (error) { console.error(error); alert("Prompt 生成失败: " + error.message); } 
+
+                } catch (error) { console.error(error); alert("生成失败: " + error.message); } 
                 finally { loader.classList.add('hidden'); }
+            }
+
+            async callAI(systemPrompt, userContent = "Go") {
+                const response = await fetch(this.settings.baseUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.settings.apiKey}` },
+                    body: JSON.stringify({ 
+                        model: this.settings.model, 
+                        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userContent }], 
+                        temperature: 0.7, 
+                        max_tokens: 8000 
+                    })
+                });
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                const data = await response.json();
+                return data.choices[0].message.content;
             }
 
             copyPrompt() {
