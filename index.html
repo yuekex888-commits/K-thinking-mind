@@ -303,7 +303,7 @@
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
                 <div>
                     <h3 class="font-bold text-lg text-slate-800 flex items-center"><i class="fa-brands fa-google text-blue-500 mr-2"></i>Google AI Studio 提示词</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">已生成给开发人员的详细需求文档</p>
+                    <p class="text-xs text-slate-500 mt-0.5">已生成包含完整交互细节的详细需求文档</p>
                 </div>
                 <button onclick="document.getElementById('prompt-modal').classList.add('hidden')" class="text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-times text-xl"></i></button>
             </div>
@@ -328,7 +328,7 @@
         const defaultTree = {
             id: 'root',
             topic: '我的产品构想',
-            description: '核心目标...',
+            description: '项目核心目标（例如：打造一个极简的待办事项应用）',
             expanded: true,
             children: [
                 { 
@@ -982,39 +982,76 @@
                     return;
                 }
 
-                // 1. Flatten tree to list
+                // 1. Extract Project Info
+                const projectName = this.treeData.topic || "Untitled Project";
+                const projectGoal = this.treeData.description || "No specific goal provided.";
+
+                // 2. Flatten tree to detailed list
                 let treeText = "";
                 const traverse = (node, depth) => {
                     const indent = "  ".repeat(depth);
-                    treeText += `${indent}- [${node.topic}] ${node.description || ''}\n`;
+                    
+                    // Format: - **Node Title**
+                    //           - *Spec*: Node Description
+                    treeText += `${indent}- **${node.topic}**\n`;
+                    if (node.description) {
+                        treeText += `${indent}  - *Spec*: ${node.description}\n`;
+                    }
+                    
                     if (node.children) {
                         node.children.forEach(c => traverse(c, depth + 1));
                     }
                 };
-                traverse(this.treeData, 0);
+                
+                // Start traversing from children to skip root node in the list
+                if (this.treeData.children) {
+                    this.treeData.children.forEach(c => traverse(c, 0));
+                }
 
-                // 2. Generate Prompt
+                // 3. Generate High-Fidelity Prompt
                 const finalPrompt = `
 # Role
-You are an expert Senior Full Stack Developer.
+You are an expert Senior Full Stack Developer and System Architect.
 
-# Context
-I am a Product Manager and I have designed the following feature structure for a new application.
-Please help me build this application by generating the necessary code structure and core logic.
+# Project Overview
+**Project Name**: ${projectName}
+**Core Objective**: ${projectGoal}
 
-# Product Requirements Map (Mind Map Source)
+# Context & Instructions
+I am a Product Manager who has engaged in a deep, iterative design process to define the requirements for this software.
+The structure provided below is NOT a rough sketch; it is a **finalized, detailed functional specification**.
+
+**CRITICAL INSTRUCTION**: 
+You must treat every node in the provided Mind Map as a **mandatory requirement**. 
+Do not summarize, simplify, or omit any details. 
+Every "Feature" node represents a specific functionality that must be implemented in the code.
+Every "Requirement" description contains vital logic or constraints that must be preserved.
+
+# Detailed Product Requirements Map
 ${treeText}
 
-# Task
-1. **Architecture**: Based on the features above, recommend a modern tech stack (Frontend/Backend/DB).
-2. **Structure**: Generate a complete project file structure suitable for a production-ready app.
-3. **Implementation**:
-    - Focus on the "Level 1" nodes as main modules.
-    - Implement the leaf nodes as specific features.
-    - Ensure code quality, error handling, and basic security (Auth) are included even if not explicitly mentioned in the map.
-4. **Clarification**: If any logic is implicit (e.g., "User Login" implies "Register" and "Forgot Password"), please implement the standard best practices for those flows.
+# Implementation Task
+Please generate the complete codebase for this project.
 
-Please start by outputting the file structure and the package.json / requirements.txt configuration.
+## 1. Technical Architecture
+- Analyze the requirements to select the most robust tech stack (e.g., React/Next.js + Node/Python + SQL/NoSQL).
+- Ensure the architecture supports all modules listed above.
+
+## 2. File Structure & Configuration
+- Output a comprehensive file structure.
+- Include necessary config files (package.json, .env.example, etc.).
+
+## 3. Core Logic Implementation
+- **DO NOT** just generate placeholders. 
+- Implement the actual logic for the features described in the map.
+- If a node says "User Login (WeChat/Phone)", implement the logic for both WeChat and Phone authentication handling.
+- If a description mentions specific data fields or workflows, implement them strictly.
+
+## 4. Quality Assurance
+- Add comments explaining how complex requirements are handled.
+- Ensure error handling and edge cases are considered based on the product goals.
+
+Please proceed with building the application, ensuring no detail from the requirements map is lost.
 `;
 
                 document.getElementById('prompt-output').value = finalPrompt;
